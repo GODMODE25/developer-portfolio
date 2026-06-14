@@ -1,0 +1,85 @@
+---
+title: "Architecting a Multi-Role Educational Platform in Flask"
+publishedAt: "2026-06-10"
+summary: "An engineering dive into structuring robust relational databases and role-based access control (RBAC) for the Student Performance Tracker."
+tags: ["Python", "Flask", "PostgreSQL", "Full-Stack"]
+readTime: "7 min read"
+---
+
+A major challenge in educational software is handling diverse user permissions cleanly. In the **Student Performance Tracker**, an Admin has full override rights, a Teacher can input grades but only for their assigned classes, a Student can only view their own performance, and a Parent must be able to view the performance of specific linked students.
+
+Here is a look at how I architected the backend of this platform using Python, Flask, and PostgreSQL.
+
+## Database Design: Relational Integrity
+
+The backbone of the system is the relational data model. Using `SQLAlchemy`, I designed a schema that enforces strict foreign key constraints to prevent orphaned records.
+
+The core relationship is the `User` model, which branches off based on a `role` enum.
+
+```python
+from app import db
+from flask_login import UserMixin
+
+class User(db.Model, UserMixin):
+    __tablename__ = 'users'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(64), unique=True, index=True)
+    password_hash = db.Column(db.String(128))
+    role = db.Column(db.String(20), nullable=False) # 'admin', 'teacher', 'student', 'parent'
+
+class Grade(db.Model):
+    __tablename__ = 'grades'
+    
+    id = db.Column(db.Integer, primary_key=True)
+    student_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    teacher_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    subject = db.Column(db.String(64), nullable=False)
+    score = db.Column(db.Float, nullable=False)
+    
+    # Establish bidirectional relationships
+    student = db.relationship('User', foreign_keys=[student_id], backref='grades_received')
+    teacher = db.relationship('User', foreign_keys=[teacher_id], backref='grades_given')
+```
+
+By linking everything back to the unified `users` table via foreign keys, cascading deletions are handled securely. If a student is removed from the system, their associated grades and attendance records drop automatically.
+
+## Implementing Role-Based Access Control (RBAC)
+
+To prevent a Student from accessing a Teacher's grade-entry endpoint, I implemented a custom Python decorator. This acts as middleware, intercepting the request before it hits the route logic.
+
+```python
+from functools import wraps
+from flask import abort
+from flask_login import current_user
+
+def requires_roles(*roles):
+    def wrapper(f):
+        @wraps(f)
+        def wrapped(*args, **kwargs):
+            if not current_user.is_authenticated or current_user.role not in roles:
+                abort(403) # Forbidden
+            return f(*args, **kwargs)
+        return wrapped
+    return wrapper
+```
+
+With this decorator, protecting endpoints becomes highly readable:
+
+```python
+@app.route('/dashboard/teacher/enter_grades', methods=['POST'])
+@requires_roles('teacher', 'admin')
+def enter_grades():
+    # Logic to record grades securely
+    pass
+```
+
+## Visual Analytics with Chart.js
+
+Data is only useful if it's readable. I built a dynamic analytics dashboard on the frontend using **Chart.js**. 
+
+The Flask backend aggregates the SQL data into JSON metrics, calculating class averages, attendance rates, and percentile rankings. The frontend consumes this JSON and renders responsive line charts for performance-over-time and pie charts for attendance breakdown.
+
+This separation of concerns—where Flask serves as a strict JSON data provider for the analytics endpoints—makes the system highly modular. If we ever want to build a mobile app, the API is already decoupled from the HTML rendering.
+
+Building this system reinforced the importance of solid database fundamentals and clean middleware abstractions in full-stack architecture.

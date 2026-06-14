@@ -1,0 +1,81 @@
+---
+title: "Harnessing LLMs for Workflow Automation: A Prompt Engineering Guide"
+publishedAt: "2026-06-12"
+summary: "Exploring how to transform unstructured inputs into reliable, structured outputs using AI APIs like Claude, Gemini, and Perplexity."
+tags: ["AI", "Automation", "Prompt Engineering", "Python"]
+readTime: "8 min read"
+---
+
+The explosion of Large Language Models (LLMs) has fundamentally shifted how we approach data processing. Previously, extracting specific data from a messy, unstructured text file required brittle Regular Expressions (Regex) or complex Natural Language Processing (NLP) models. 
+
+Today, we can use LLMs as high-level "reasoning engines" to handle this unstructured chaos and return perfectly formatted JSON for our downstream systems. But getting an LLM to be deterministic and reliable requires strict **Prompt Engineering** workflows.
+
+## The Problem with Naive Prompts
+
+When interacting with an LLM via API (e.g., Anthropic's Claude or Google's Gemini), a naive prompt might look like this:
+
+> "Extract the invoice numbers and amounts from this email and format it as JSON."
+
+While this works 80% of the time, the remaining 20% will break your automation pipeline. The LLM might include conversational filler (`"Here is the JSON you requested:"`), use inconsistent keys (`"Amount"` vs `"TotalAmount"`), or hallucinate data if the email is unclear.
+
+## Designing a Structured Output Pipeline
+
+To build reliable AI-assisted workflows, I treat the LLM as a strictly typed function. Here are the core pillars of my prompt engineering strategy:
+
+### 1. Zero-Shot vs Few-Shot Prompting
+Instead of just telling the model what to do, I provide strict examples of the expected output. Providing 2 or 3 input/output pairs (Few-Shot) drastically reduces the hallucination rate and guarantees the output schema.
+
+### 2. XML Tagging for Context Isolation
+Modern LLMs (especially Claude) are highly attuned to XML tags. By wrapping instructions, context, and expected outputs in XML, the model understands exactly where the boundaries of the data lie.
+
+```xml
+<system_instructions>
+You are an expert data extraction API. 
+Your ONLY output must be a valid JSON object matching the schema provided. 
+Do not include conversational text.
+</system_instructions>
+
+<input_data>
+{Raw messy text goes here}
+</input_data>
+
+<expected_schema>
+{
+  "invoice_number": "string",
+  "total_amount": "float"
+}
+</expected_schema>
+```
+
+### 3. Temperature and Top-P Constraints
+For analytical pipelines, creativity is a bug. When generating structured data or executing code, I always set the model's `temperature` to `0.0` or `0.1`. This forces the model to pick the highest-probability tokens, ensuring deterministic outputs across multiple runs.
+
+## Building the Evaluation Loop
+
+You cannot deploy an AI automation workflow without an evaluation framework. Whenever I design a new prompt, I run it through an automated test suite using Python:
+
+1. **Dataset**: A collection of 100 edge-case inputs (e.g., invoices with weird formatting).
+2. **Execution**: The Python script hits the LLM API with the prompt across all 100 inputs.
+3. **Validation**: The script attempts to parse the output using `json.loads()` and validates it against a `Pydantic` schema.
+
+```python
+from pydantic import BaseModel, ValidationError
+import json
+
+class InvoiceExtraction(BaseModel):
+    invoice_number: str
+    total_amount: float
+
+def validate_llm_output(raw_output: str) -> bool:
+    try:
+        data = json.loads(raw_output)
+        validated = InvoiceExtraction(**data)
+        return True
+    except (json.JSONDecodeError, ValidationError) as e:
+        print(f"Extraction Failed: {e}")
+        return False
+```
+
+If the success rate drops below 98%, the prompt is tweaked and the evaluation loop runs again.
+
+By treating LLM prompts as code—version-controlled, tested, and strictly structured—we can build autonomous agents that process massive amounts of unstructured data with near-perfect reliability.

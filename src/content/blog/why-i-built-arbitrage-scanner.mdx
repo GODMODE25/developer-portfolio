@@ -1,0 +1,75 @@
+---
+title: "How I Built a Low-Latency EVM Arbitrage Scanner"
+publishedAt: "2026-05-28"
+summary: "An engineering breakdown of an asynchronous DEX/CEX arbitrage scanner using Python and CCXT to process market discrepancies."
+tags: ["Crypto", "Python", "Trading", "Asynchronous"]
+readTime: "6 min read"
+---
+
+Manual trading cannot compete with the speed required in modern cryptocurrency markets. Price discrepancies between Centralized Exchanges (CEXs) and Decentralized Exchanges (DEXs) exist only for fractions of a second before market makers close the gap. 
+
+This post breaks down how I designed a high-performance arbitrage scanner capable of detecting and exploiting these inefficiencies across multiple venues simultaneously using Python's `asyncio` and the `CCXT` library.
+
+## The Problem with Synchronous Scanners
+
+When building my first trading bot, I used a standard synchronous approach: loop through a list of exchanges, fetch the order book, calculate the spread, and place a trade if profitable.
+
+```python
+# The slow, synchronous way
+for exchange in exchanges:
+    order_book = exchange.fetch_order_book('ETH/USDT')
+    check_arbitrage(order_book)
+```
+
+If an API call takes 200ms, checking 5 exchanges takes a full second. By the time the code calculates profitability on the 5th exchange, the price on the 1st exchange has already moved.
+
+## Moving to an Asynchronous Architecture
+
+To solve this, I completely re-architected the bot to run concurrently. Using `asyncio`, the bot fires off requests to all exchanges simultaneously and processes the data as it arrives.
+
+The core relies on the `CCXT` library's async capabilities:
+
+```python
+import ccxt.async_support as ccxt
+import asyncio
+
+async def fetch_and_evaluate(exchange_id, symbol):
+    exchange = getattr(ccxt, exchange_id)({'enableRateLimit': True})
+    ticker = await exchange.fetch_ticker(symbol)
+    await exchange.close()
+    return {exchange_id: ticker}
+
+async def scan_market(symbol):
+    exchanges = ['binance', 'kraken', 'kucoin', 'bybit']
+    tasks = [fetch_and_evaluate(ex_id, symbol) for ex_id in exchanges]
+    
+    # Fire all requests concurrently
+    results = await asyncio.gather(*tasks)
+    
+    find_arbitrage_opportunities(results)
+```
+
+This reduced my total scan time from `O(N)` (where N is the number of exchanges) to roughly the duration of the slowest single API response.
+
+## Triangular Arbitrage Detection
+
+Beyond simple cross-exchange arbitrage, I implemented triangular arbitrage detection. This involves finding inefficiencies between three different currency pairs on the *same* exchange.
+
+The logic relies on graph theory. By treating currencies as nodes and exchange rates as directed edges, triangular arbitrage becomes a cycle-detection problem. 
+
+1. Start with Base (USDT) -> Buy Asset A (ETH)
+2. Trade Asset A (ETH) -> Asset B (BTC)
+3. Sell Asset B (BTC) -> Base (USDT)
+
+If the final USDT amount > initial USDT amount (accounting for maker/taker fees), we execute the route.
+
+## Execution and Risk Management
+
+Detecting the opportunity is only half the battle. Execution risk (slippage, network latency) can easily turn a profitable mathematical route into a losing real-world trade.
+
+To mitigate this, the bot employs:
+- **Atomic-style execution**: Firing market orders via parallel asyncio tasks to minimize the time between the first and last leg of the trade.
+- **Dynamic Fee Calculation**: Integrating the exact tier-based maker/taker fees of the API key in real-time.
+- **Fail-safes**: If leg 1 executes but leg 2 fails due to sudden liquidity shifts, the bot immediately triggers a market dump to flatten the exposure, avoiding directional risk.
+
+Building this scanner heavily improved my understanding of high-throughput asynchronous Python and network-level optimization in fintech systems.

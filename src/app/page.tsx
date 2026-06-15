@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
-import { Terminal, Github, Layers } from "lucide-react";
+import { Terminal, Github, Layers, Menu, X } from "lucide-react";
 import { siteConfig } from "@/content/site";
 
 // Component imports
@@ -18,6 +18,7 @@ import ScrollToTop from "@/components/ui/scroll-to-top";
 
 export default function Home() {
   const [isTerminalOpen, setIsTerminalOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   // Toggle terminal handler
   const handleToggleTerminal = () => {
@@ -106,9 +107,30 @@ export default function Home() {
               <Terminal className="w-3.5 h-3.5" />
               <span className="hidden sm:inline">SHELL</span>
             </button>
+
+            {/* Mobile Menu Toggle */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden text-slate-400 hover:text-white transition-colors p-1"
+            >
+              {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            </button>
           </div>
 
         </div>
+
+        {/* Mobile Navigation Dropdown */}
+        {isMobileMenuOpen && (
+          <div className="md:hidden absolute top-14 left-0 w-full border-b border-white/5 bg-cyber-black/95 backdrop-blur-xl font-mono text-xs flex flex-col shadow-2xl">
+            <nav className="flex flex-col p-4 gap-2 text-slate-400">
+              <button onClick={() => { scrollToSection("about"); setIsMobileMenuOpen(false); }} className="hover:text-white transition-colors text-left py-3 border-b border-white/5">[01. ABOUT]</button>
+              <button onClick={() => { scrollToSection("skills"); setIsMobileMenuOpen(false); }} className="hover:text-white transition-colors text-left py-3 border-b border-white/5">[02. SKILLS]</button>
+              <button onClick={() => { scrollToSection("projects"); setIsMobileMenuOpen(false); }} className="hover:text-white transition-colors text-left py-3 border-b border-white/5">[03. PROJECTS]</button>
+              <button onClick={() => { scrollToSection("blog"); setIsMobileMenuOpen(false); }} className="hover:text-white transition-colors text-left py-3 border-b border-white/5">[04. BLOG]</button>
+              <button onClick={() => { scrollToSection("contact"); setIsMobileMenuOpen(false); }} className="hover:text-white transition-colors text-left py-3">[05. CONTACT]</button>
+            </nav>
+          </div>
+        )}
       </header>
 
       {/* Main content flow */}

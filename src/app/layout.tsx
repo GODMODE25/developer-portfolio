@@ -20,6 +20,9 @@ export const metadata: Metadata = {
     description: "Interactive portfolio, project systems, skills graph, and technical engineering logs.",
     type: "website",
   },
+  icons: {
+    icon: "/favicon.png?v=3",
+  },
 };
 
 export default function RootLayout({

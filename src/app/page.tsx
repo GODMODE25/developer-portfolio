@@ -231,6 +231,8 @@ export default function Home() {
             
           </div>
         </div>
+        <div className="w-full h-18"></div>
+        
       </footer>
 
       {/* Cmd+K Palette */}

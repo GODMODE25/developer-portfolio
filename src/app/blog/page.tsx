@@ -148,6 +148,7 @@ export default function BlogIndex() {
         <div className="site-shell">
           © {new Date().getFullYear()} SAMUEL MUSA. METADATA FULLY OPTIMIZED.
         </div>
+        <div className="w-full h-6"></div>
       </footer>
 
     </div>

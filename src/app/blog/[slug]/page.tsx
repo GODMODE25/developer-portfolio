@@ -315,6 +315,7 @@ export default async function BlogPostPage({ params }: PageProps) {
         <div className="site-shell">
           © {new Date().getFullYear()} SAMUEL MUSA. TRANSACTION BUNDLED & SEALED.
         </div>
+        <div className="w-full h-6"></div>
       </footer>
 
     </div>

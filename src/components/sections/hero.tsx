@@ -82,7 +82,7 @@ export const Hero: React.FC<HeroProps> = ({ onOpenTerminal }) => {
             <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-neon opacity-75"></span>
             <span className="relative inline-flex rounded-full h-2 w-2 bg-neon"></span>
           </span>
-          <span>PORTFOLIO CORE v1.2.0 // ONLINE</span>
+          <span>PORTFOLIO CORE v1.3.0 // ONLINE</span>
         </motion.div>
 
         {/* Big Name scrambled reveal */}

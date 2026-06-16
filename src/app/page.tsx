@@ -65,8 +65,8 @@ export default function Home() {
   return (
     <div className="relative min-h-screen flex flex-col bg-cyber-black text-slate-200">
       
-      {/* Sticky Navigation Bar */}
-      <header className="sticky top-0 z-40 w-full border-b border-white/5 bg-cyber-black/70 backdrop-blur-md">
+      {/* Fixed Navigation Bar */}
+      <header className="fixed top-0 z-50 w-full border-b border-white/5 bg-cyber-black/70 backdrop-blur-md">
         <div className="site-shell h-14 flex items-center justify-between font-mono text-xs">
           
           {/* Logo */}
@@ -134,7 +134,7 @@ export default function Home() {
       </header>
 
       {/* Main content flow */}
-      <main className="flex-grow">
+      <main className="flex-grow pt-14">
         
         {/* Sections */}
         <Hero onOpenTerminal={handleToggleTerminal} />

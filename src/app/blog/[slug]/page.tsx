@@ -242,7 +242,7 @@ export default async function BlogPostPage({ params }: PageProps) {
     <div className="min-h-screen flex flex-col bg-cyber-black text-slate-200 grid-bg font-sans">
       
       {/* Small Header */}
-      <header className="border-b border-white/5 bg-cyber-black/70 backdrop-blur-md sticky top-0 z-40">
+      <header className="border-b border-white/5 bg-cyber-black/70 backdrop-blur-md fixed top-0 w-full z-50">
         <div className="site-shell h-14 flex items-center justify-between font-mono text-xs">
           <Link href="/" className="flex items-center gap-2 text-white hover:text-neon transition-colors">
             <Layers className="w-4 h-4 text-neon" />
@@ -253,7 +253,7 @@ export default async function BlogPostPage({ params }: PageProps) {
       </header>
 
       {/* Main post body */}
-      <main className="flex-grow page-section">
+      <main className="flex-grow page-section pt-14">
         <article className="section-shell-blog">
           
           {/* Back handle */}

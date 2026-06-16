@@ -239,7 +239,7 @@ export default async function BlogPostPage({ params }: PageProps) {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-cyber-black text-slate-200 grid-bg font-sans">
+    <div className="min-h-screen flex flex-col bg-cyber-black text-slate-200 grid-bg font-sans w-full max-w-[100vw] overflow-x-hidden">
       
       {/* Small Header */}
       <header className="border-b border-white/5 bg-cyber-black/70 backdrop-blur-md fixed top-0 w-full z-50">

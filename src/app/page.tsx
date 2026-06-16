@@ -63,7 +63,7 @@ export default function Home() {
   };
 
   return (
-    <div className="relative min-h-screen flex flex-col bg-cyber-black text-slate-200">
+    <div className="relative min-h-screen flex flex-col bg-cyber-black text-slate-200 w-full max-w-[100vw] overflow-x-hidden">
       
       {/* Fixed Navigation Bar */}
       <header className="fixed top-0 z-50 w-full border-b border-white/5 bg-cyber-black/70 backdrop-blur-md">

@@ -1,0 +1,127 @@
+---
+title: "Building OE Chess Lab: An Interactive Spaced-Repetition Chess Trainer"
+publishedAt: "2026-07-18"
+summary: "An engineering deep dive into structuring a schema-validated openings curriculum, off-thread Stockfish WASM analysis, and custom training hooks in Next.js."
+tags: ["Next.js", "TypeScript", "Stockfish WASM", "Tailwind CSS"]
+readTime: "6 min read"
+---
+
+Chess study tools are often fragmented. Standard chess interfaces excel at game simulation or isolated puzzles, but lack structures tailored for systematic opening recall and endgame mastery. I built **OE Chess Lab** as a dedicated environment for move-by-move repertoire training and spaced-repetition scheduling.
+
+Here is an architectural look at how I designed the system, implemented off-thread engine analysis, and created an automated curriculum verification suite.
+
+---
+
+## 1. Modular JSON Curriculum Schema
+
+To prevent code bloating and separate chess data from presentation components, I modeled the opening repertoires as modular JSON databases. To ensure data integrity, each file is verified by a strict JSON schema and unit tests using `chess.js`.
+
+The schema isolates **concepts**, **traps**, and **variations**:
+
+```json
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "OpeningVariation",
+  "type": "object",
+  "properties": {
+    "id": { "type": "string" },
+    "opening": { "type": "string" },
+    "variation": { "type": "string" },
+    "movesSan": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "movesUci": {
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "endingFen": { "type": "string" }
+  },
+  "required": ["id", "opening", "variation", "movesSan", "movesUci", "endingFen"]
+}
+```
+
+By structuring lines into a 7-tier mastery curriculum (Beginner to Legend), we can enforce pre-requisites and build opening dependency graphs.
+
+---
+
+## 2. Off-Thread Stockfish Analysis (WASM Web Worker)
+
+Running a chess engine like Stockfish inside the main browser thread causes interface stuttering during heavy calculations. To achieve a smooth 60fps render loop on the chessboard, I offloaded Stockfish (compiled to WebAssembly) to a dedicated **Web Worker**.
+
+Here is the worker client communication design:
+
+```typescript
+// stockfish.worker.ts
+import { getStockfishClient } from "@/services/stockfish/client";
+
+self.onmessage = (e) => {
+  const { command, fen } = e.data;
+  if (command === "position") {
+    engine.send(`position fen ${fen}`);
+    engine.send("go depth 15");
+  }
+};
+
+engine.onEvaluation = (evalData) => {
+  self.postMessage({ type: "eval", data: evalData });
+};
+```
+
+On the main thread, a custom React hook `useStockfish` consumes this worker:
+
+```typescript
+export function useStockfish(fen: string) {
+  const [evaluation, setEvaluation] = useState<Evaluation | null>(null);
+
+  useEffect(() => {
+    const worker = new Worker(new URL("./stockfish.worker.ts", import.meta.url));
+    worker.postMessage({ command: "position", fen });
+
+    worker.onmessage = (e) => {
+      if (e.data.type === "eval") {
+        setEvaluation(e.data.data);
+      }
+    };
+
+    return () => worker.terminate();
+  }, [fen]);
+
+  return evaluation;
+}
+```
+
+---
+
+## 3. Designing for Focus: The Opening Trainer UI
+
+A key design goal was preventing UI move leaks. Traditional PGN viewers list the entire move list upfront, spoiling active recall. In the OE Chess Lab training HUD:
+1. Future moves in the line are hidden.
+2. The active move displays as a `?` placeholder, prompting the user.
+3. Once completed, the correct move resolves into green with an explanatory tooltip highlighting the underlying strategic concept.
+
+---
+
+## 4. Automated Curriculum Validation with Vitest
+
+With thousands of chess moves across different tiers, manual testing is impossible. We created a custom Vitest suite that parses each JSON file, instantiates a virtual `chess.js` board, executes every SAN/UCI move sequentially, and verifies that the board's ending FEN matches the statically declared FEN in the schema.
+
+```typescript
+import { Chess } from "chess.js";
+import beginnerLines from "../data/openings/white/italian/beginner.json";
+
+describe("Curriculum Validation", () => {
+  test("verify beginner lines have legal moves and matching FEN", () => {
+    beginnerLines.variations.forEach(line => {
+      const board = new Chess();
+      line.movesSan.forEach(move => {
+        const legalMove = board.move(move);
+        expect(legalMove).not.toBeNull();
+      });
+      expect(board.fen()).toBe(line.endingFen);
+    });
+  });
+});
+```
+
+This automated validation setup ensures that our content is always bug-free, preventing illegal positions or incorrect moves from breaking the live client.

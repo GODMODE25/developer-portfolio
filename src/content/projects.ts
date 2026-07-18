@@ -168,5 +168,38 @@ def record_match():
         self.display_label.config(text="***")
         self.input_field = tk.Entry(self)
         self.input_field.pack()`
+  },
+  {
+    id: "oe-chess-lab",
+    title: "OE Chess Lab",
+    subtitle: "Interactive chess study and curriculum engine",
+    category: "AI",
+    complexity: 9.2,
+    linesOfCode: 5200,
+    whyItExists: "Standard chess platforms focus on raw gameplay or generic puzzles, leaving structured opening and endgame study fragmented. I built OE Chess Lab to provide a dedicated tool for move-by-move practice, spaced-repetition reviews, and Stockfish analysis integrated in a premium dashboard.",
+    architectureDetails: [
+      "Next.js 16 App Router interface styled with Tailwind CSS v4 and glassmorphism",
+      "Firebase backend integrating client-side authentication, user preferences, and real-time study stats",
+      "WASM-based Stockfish Chess Engine running asynchronously on a Web Worker off the main thread",
+      "Modular, schema-validated JSON curriculum database (openings, concepts, traps) verified by automated tests"
+    ],
+    techStack: ["Next.js", "TypeScript", "Tailwind CSS", "Firebase", "chess.js", "Stockfish WASM", "Vitest"],
+    githubUrl: "https://github.com/GODMODE25/lotus-chess-clone",
+    status: "completed",
+    mockCodePreview: `export function OpeningTrainer({ lesson }: OpeningTrainerProps) {
+  const [currentPly, setCurrentPly] = useState(0);
+  const [feedback, setFeedback] = useState({ tone: "idle", detail: lesson.overview });
+  
+  const expectedSan = lesson.movesSan[currentPly] ?? null;
+  const isFinished = currentPly >= lesson.movesSan.length;
+
+  const handleUserMove = (move) => {
+    if (move.san === expectedSan) {
+      setCurrentPly(prev => prev + 1);
+      setFeedback({ tone: "success", detail: "Correct move!" });
+    } else {
+      setFeedback({ tone: "error", detail: "Incorrect. Try again." });
+    }
+  };`
   }
 ];

@@ -185,6 +185,7 @@ def record_match():
     ],
     techStack: ["Next.js", "TypeScript", "Tailwind CSS", "Firebase", "chess.js", "Stockfish WASM", "Vitest"],
     githubUrl: "https://github.com/GODMODE25/lotus-chess-clone",
+    demoUrl: "https://oechess.vercel.app",
     status: "completed",
     mockCodePreview: `export function OpeningTrainer({ lesson }: OpeningTrainerProps) {
   const [currentPly, setCurrentPly] = useState(0);
